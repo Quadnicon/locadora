@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rodas & Rotas - Locadora de Veículos</title>
+    <style>
+        /* CSS para estilização */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 950px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* ESTILO DO CABEÇALHO E LOGO */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center; 
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+        }
+
+        .logo-container {
+            margin-right: 20px;
+            /* Tamanho fixo para a área da logo */
+            width: 80px; 
+            height: 80px; 
+            overflow: hidden; 
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            /* Garante que a imagem se ajuste bem */
+            object-fit: contain; 
+        }
+        /* Para mostrar um placeholder se a imagem não carregar */
+        .logo-container img:not([src]):not([alt]) {
+            content: 'LOGO';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: #ccc;
+            border: 1px solid #ccc;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin: 0;
+        }
+
+        h2 {
+            color: #555;
+            border-left: 5px solid #007bff;
+            padding-left: 10px;
+            margin-top: 25px;
+        }
+        .car-list {
+            list-style: none;
+            padding: 0;
+        }
+        .car-item {
+            background-color: #e9f5ff;
+            margin-bottom: 12px;
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s;
+            border-left: 5px solid #007bff50;
+        }
+        .car-item.alugado {
+            background-color: #ffebeb; 
+            border-left: 5px solid #dc3545;
+        }
+        .car-info strong {
+            font-size: 1.2em;
+            color: #0056b3;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 15px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .alugar-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .alugar-btn:hover {
+            background-color: #218838;
+        }
+        .devolver-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .devolver-btn:hover {
+            background-color: #c82333;
+        }
+        .form-section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 90%;
+            box-sizing: border-box;
+        }
+        /* Estilo para mensagens de feedback */
+        #mensagem {
+            font-weight: bold; padding: 10px; border-radius: 4px;
+        }
+        #mensagem.sucesso {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        #mensagem.erro {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img id="logo-img" src="" alt="Logo Rodas & Rotas">
+            </div>
+            
+            <h1>Rodas & Rotas</h1>
+        </div>
+
+        <h2>Inventário Disponível</h2>
+        <ul id="inventario-lista" class="car-list">
+            </ul>
+        
+        <div class="form-section">
+            <h2>Alugar Carro</h2>
+            <label for="alugar-placa">Placa do Carro:</label>
+            <input type="text" id="alugar-placa" placeholder="Ex: ABC1234" required>
+            
+            <label for="alugar-dias">Dias de Aluguel:</label>
+            <input type="number" id="alugar-dias" min="1" value="1" required>
+            
+            <button onclick="alugarCarroUI()" class="alugar-btn">Confirmar Aluguel</button>
+        </div>
+
+        <div class="form-section">
+            <h2>Devolver Carro</h2>
+            <label for="devolver-placa">Placa do Carro:</label>
+            <input type="text" id="devolver-placa" placeholder="Ex: ABC1234" required>
+            
+            <label for="devolver-km">KM Rodados na Devolução:</label>
+            <input type="number" id="devolver-km" min="0" required>
+            
+            <button onclick="devolverCarroUI()" class="devolver-btn">Confirmar Devolução</button>
+        </div>
+
+        <p id="mensagem"></p>
+    </div>
+
+    <script>
+        // --- JAVASCRIPT: Lógica da Locadora ---
+
+        let inventario = [
+            // Modelos, ano, placa, km inicial, valor da diária
+            { placa: "ABC1234", modelo: "Fiat Uno", ano: 2018, km_rodados: 55000, valor_diaria: 50.00, disponivel: true, data_aluguel: null },
+            { placa: "DEF5678", modelo: "VW Gol Comfortline", ano: 2020, km_rodados: 30000, valor_diaria: 75.00, disponivel: true, data_aluguel: null },
+            { placa: "GHI9012", modelo: "Chevrolet Onix Plus", ano: 2023, km_rodados: 5000, valor_diaria: 120.00, disponivel: false, data_aluguel: "2025-10-15" } 
+        ];
+        
+        // **AQUI ESTÁ A MUDANÇA: O CAMINHO DA IMAGEM É AGORA "logo.png"**
+        const LOGO_PATH = "logo.png"; 
+
+        const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        function exibirMensagem(texto, tipo) {
+            const msgElement = document.getElementById('mensagem');
+            msgElement.textContent = texto;
+            
+            // Remove classes antigas e adiciona a nova para estilização
+            msgElement.className = ''; 
+            if (tipo) {
+                msgElement.classList.add(tipo);
+            }
+        }
+
+        function renderizarInventario() {
+            // Configura o caminho da logo no elemento <img>
+            document.getElementById('logo-img').src = LOGO_PATH; 
+            
+            const listaHTML = document.getElementById('inventario-lista');
+            listaHTML.innerHTML = ''; 
+
+            inventario.forEach(carro => {
+                const li = document.createElement('li');
+                li.className = `car-item ${carro.disponivel ? '' : 'alugado'}`;
+                
+                const status = carro.disponivel ? 'DISPONÍVEL' : 'ALUGADO';
+                const infoAluguel = carro.disponivel ? '' : ` (Desde: ${carro.data_aluguel})`;
+
+                li.innerHTML = `
+                    <div class="car-info">
+                        <strong>${carro.modelo} (${carro.ano})</strong> | Placa: ${carro.placa} | 
+                        KM: ${carro.km_rodados.toLocaleString('pt-BR')} | Diária: ${formatarMoeda(carro.valor_diaria)}
+                    </div>
+                    <div>
+                        <span style="font-weight: bold;">${status}${infoAluguel}</span>
+                    </div>
+                `;
+                listaHTML.appendChild(li);
+            });
+        }
+
+        function alugarCarroUI() {
+            const placa = document.getElementById('alugar-placa').value.toUpperCase().trim();
+            const dias = parseInt(document.getElementById('alugar-dias').value);
+
+            const carro = inventario.find(c => c.placa === placa);
+
+            if (!carro) {
+                exibirMensagem(`Erro: Carro com placa ${placa} não encontrado.`, 'erro');
+                return;
+            }
+
+            if (!carro.disponivel) {
+                exibirMensagem(`Erro: Carro ${carro.modelo} já está alugado.`, 'erro');
+                return;
+            }
+            
+            if (dias <= 0 || isNaN(dias)) {
+                exibirMensagem(`Erro: O número de dias deve ser um inteiro positivo.`, 'erro');
+                return;
+            }
+
+            carro.disponivel = false;
+            carro.data_aluguel = new Date().toISOString().slice(0, 10); 
+            
+            const valorTotal = carro.valor_diaria * dias;
+
+            exibirMensagem(`SUCESSO! Carro ${carro.modelo} alugado por ${dias} dias. Total: ${formatarMoeda(valorTotal)}.`, 'sucesso');
+            
+            renderizarInventario(); 
+        }
+
+        function devolverCarroUI() {
+            const placa = document.getElementById('devolver-placa').value.toUpperCase().trim();
+            const km_devolucao = parseInt(document.getElementById('devolver-km').value);
+
+            const carro = inventario.find(c => c.placa === placa);
+
+            if (!carro) {
+                exibirMensagem(`Erro: Carro com placa ${placa} não encontrado.`, 'erro');
+                return;
+            }
+
+            if (carro.disponivel) {
+                exibirMensagem(`Erro: Carro ${carro.modelo} não está alugado.`, 'erro');
+                return;
+            }
+
+            if (isNaN(km_devolucao) || km_devolucao < 0) {
+                 exibirMensagem(`Erro: KM deve ser um número válido.`, 'erro');
+                 return;
+            }
+
+            if (km_devolucao < carro.km_rodados) {
+                 exibirMensagem(`Erro: KM de devolução (${km_devolucao.toLocaleString('pt-BR')}) não pode ser menor que o KM anterior (${carro.km_rodados.toLocaleString('pt-BR')}).`, 'erro');
+                 return;
+            }
+            
+            // Simulação de cálculo de dias (usamos 3 dias fixos para demonstração)
+            const diasAlugados = 3; 
+            const valorTotal = carro.valor_diaria * diasAlugados;
+
+            carro.disponivel = true;
+            carro.km_rodados = km_devolucao; 
+            carro.data_aluguel = null; 
+
+            exibirMensagem(`SUCESSO! Carro ${carro.modelo} devolvido. ${diasAlugados} dias no total. Valor a pagar: ${formatarMoeda(valorTotal)}.`, 'sucesso');
+            
+            renderizarInventario(); 
+        }
+
+        document.addEventListener('DOMContentLoaded', renderizarInventario);
+    </script>
+
+</body>
+</html>
